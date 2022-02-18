@@ -97,27 +97,47 @@ const data: Message = {
 }
 
 const proxy = makeObservable(data)
-proxy.subscribe(console.log)
-proxy.m1 = 'fml'
+// proxy.subscribe(console.log)
+// proxy.m1 = 'fml'
 
-const user = {
-  name: 'any',
-  age: '69',
-  city: 'N/A',
+const card = {
+  id: 6983839,
+  name: 'Tornado Dragon',
+  type: 'XYZ Monster',
+  desc: '2 Level 4 monsters\nOnce per turn (Quick Effect): You can detach 1 material from this card, then target 1 Spell/Trap on the field; destroy it.',
+  atk: 2100,
+  def: 2000,
+  level: 4,
+  race: 'Wyrm',
+  attribute: 'WIND',
 }
+
+type Cards = Record<keyof typeof card, string>
 
 function sha256(value: string) {
-  return crypto.createHash('sha256').update(value).digest('hex')
+  return crypto.createHash('sha256').update(value.toString()).digest('hex')
 }
 
-function encryptObject(obj: object) {
-  let newObj = {}
+const o = hashObject<Cards>(card as unknown as Cards)
 
-  for (const key of Object.keys(obj)) {
-    newObj[key] = sha256(obj[key])
-  }
+function hashObject<T extends object>(obj: T): T { let newObj = {}  for (const key of Object.keys(obj)) { newObj[key] = sha256(obj[key]) }  console.log(newObj)  return new Proxy(newObj as unknown as object, { set: function (target: object, prop: string, value: any) { return (target[prop] = sha256(value)) as unknown as boolean }, get: function (target, prop) { return target[prop] + 'ABCD' }, }) as T }
 
-  console.log(newObj)
+
+function createReactive<T extends object>(
+  obj: T,
+  observer: (data: any) => void
+): T {
+  return new Proxy(obj, {
+    set: function (target: object, prop: string, value: any) {
+
+      console.log('set called on reactive')
+
+      observer({ [prop]: value })
+
+      return (target[prop] = value)
+    },
+  }) as T
 }
 
-encryptObject(user)
+const reactiveProxy: Cards = createReactive(card as unknown as Cards, console.log)
+reactiveProxy.atk = "9999999999"
